@@ -63,7 +63,20 @@
     "npmRebuild": false,
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "files": [
+      "main.js",
       "preload.js",
+      "*.html",
+      "js/**/*",
+      "css/**/*",
+      "jquery/**/*",
+      "popper/**/*",
+      "bootstrap/**/*",
+      "materialize/**/*",
+      "handsontable/**/*",
+      "sortablejs/**/*",
+      "textboxio-client/**/*",
+      "img/**/*",
+      "app/**/*",
       "collaboration/pf-collaboration.js"
     ]
   },
