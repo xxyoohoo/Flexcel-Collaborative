@@ -194,7 +194,7 @@ async function verifyRoomControls(pf) {
       if (state?.detail.startsWith('Server:') || state?.detail.startsWith('Could not')) {
         throw new Error('Create room rejected: ' + JSON.stringify(state));
       }
-      return state?.status.startsWith('Connected') && state.invite.startsWith(`FLEXCEL1|${serverAddress}|`)
+      return state?.status.startsWith('Connected') && state.invite.startsWith(`FLEXCEL1|${new URL(serverAddress).toString()}|`)
         ? state.invite : null;
     }, 15000);
     assert(createdInvite, 'Create room did not return an invitation');
