@@ -1,0 +1,104 @@
+# FLEXCEL_PHASE4_UNSIGNED_RELEASE
+# Automatically builds FREE, unsigned .dmg installers for both Mac CPU architectures.
+# This workflow runs when its configuration is first pushed to the existing feature branch.
+name: Flexcel Collaborative macOS installers
+
+on:
+  push:
+    branches:
+      - fix/old-dependencies
+    paths:
+      - '.github/workflows/flexcel-macos-release.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'main.js'
+      - 'preload.js'
+      - '*.html'
+      - 'js/**'
+      - 'collaboration/**'
+      - 'build/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-mac:
+    name: Build macOS ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x64
+    steps:
+      - name: Checkout Flexcel Collaborative
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Download Electron binary for this Mac
+        run: npm rebuild electron
+
+      - name: Check PF editor JavaScript
+        run: |
+          node --check main.js
+          node --check preload.js
+          node --check js/pf-display-fix.js
+          node --check js/pf-layout-fix.js
+          node --check js/pf-modern-controls.js
+          node --check collaboration/pf-collaboration.js
+
+      - name: Build unsigned DMG
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --mac dmg --${{ matrix.arch }} --publish never
+
+      - name: Upload DMG for release
+        uses: actions/upload-artifact@v4
+        with:
+          name: flexcel-macos-${{ matrix.arch }}
+          path: dist/*.dmg
+          if-no-files-found: error
+          retention-days: 30
+
+  github-release:
+    name: Publish GitHub Release
+    needs: build-mac
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download both Mac installers
+        uses: actions/download-artifact@v4
+        with:
+          pattern: flexcel-macos-*
+          path: release-files
+          merge-multiple: true
+
+      - name: Publish unsigned installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="collab-${GITHUB_SHA:0:7}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" release-files/*.dmg --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" release-files/*.dmg \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Flexcel Collaborative (${GITHUB_SHA:0:7})" \
+              --notes "Free, UNSIGNED macOS prototype builds. Download arm64 for Apple Silicon or x64 for Intel. macOS may require System Settings > Privacy & Security > Open Anyway. These are test builds: save backups. The host must still run the collaboration server and tunnel."
+          fi

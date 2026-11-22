@@ -7,7 +7,8 @@
     "start": "electron .",
     "dist": "node_modules/.bin/build",
     "release": "bash scripts/publish_flexcel.sh",
-    "collab:server": "node collaboration/server.js"
+    "collab:server": "node collaboration/server.js",
+    "dist:mac": "electron-builder --mac dmg --publish never"
   },
   "repository": "https://github.com/saranchockan/Flexcel",
   "keywords": [
@@ -21,7 +22,7 @@
   "license": "CC0-1.0",
   "devDependencies": {
     "electron": "45.2.2",
-    "electron-builder": "^20.38.5",
+    "electron-builder": "26.18.0",
     "electron-toolkit": "^1.0.24"
   },
   "dependencies": {
@@ -47,28 +48,24 @@
     "ws": "8.23.0"
   },
   "build": {
-    "appId": "com.SAC.Flexcel",
+    "appId": "com.xxyoohoo.flexcelcollaborative",
     "mac": {
-      "category": "public.app-category.utilities",
+      "category": "public.app-category.education",
       "target": [
-        "pkg",
-        "dmg",
-        "zip",
-        "mas"
+        "dmg"
       ],
-      "entitlements": "build/entitlements.mac.plist",
-      "type": "distribution",
+      "identity": null,
+      "hardenedRuntime": false,
       "icon": "build/apple-touch-icon-128x128.icns"
     },
-    "mas": {
-      "entitlements": "build/entitlements.mas.plist",
-      "type": "distribution",
-      "category": "public.app-category.utilities"
-    },
-    "win": {
-      "target": "NSIS",
-      "icon": "build/icon.ico"
-    }
+    "productName": "Flexcel Collaborative",
+    "asar": true,
+    "npmRebuild": false,
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "files": [
+      "preload.js",
+      "collaboration/pf-collaboration.js"
+    ]
   },
   "files": [
     "main.js",
