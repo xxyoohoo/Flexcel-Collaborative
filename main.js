@@ -1,246 +1,154 @@
-// Modules to control application life and create native browser window
-const { electron } = require('electron')
-const { app, BrowserWindow } = require('electron')
-const { webFrame } = require('electron')
-const defaultMenu = require('electron-default-menu')
-const { Menu, shell } = require('electron')
-const dialog = require('electron').remote
+'use strict';
 
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the JavaScript object is garbage collected.
-let mainWindow
+const path = require('node:path');
+const { app, BrowserWindow, ipcMain } = require('electron');
+
+const allowedFlowPages = new Set([
+  'pf-flow.html',
+  'plan-flow.html',
+  'traditional-flow.html',
+  'policy-flow-dynamic.html'
+]);
+
+let mainWindow = null;
+
+ipcMain.handle('flexcel:open-flow', async (event, page) => {
+  if (typeof page !== 'string' || !allowedFlowPages.has(page)) {
+    throw new Error('Unsupported flow page');
+  }
+
+  const currentWindow = BrowserWindow.fromWebContents(event.sender);
+  if (!currentWindow) {
+    throw new Error('Flexcel window not found');
+  }
+
+  currentWindow.setResizable(true);
+  currentWindow.setMaximizable(true);
+  currentWindow.maximize();
+  await currentWindow.loadFile(path.join(__dirname, page));
+});
 
 function createWindow() {
-  // Create the browser window.
-  mainWindow = new BrowserWindow({ width: 700, height: 450, show: false })
-
-  // and load the index.html of the app.
-  mainWindow.loadFile('main-menu.html')
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools({detach: true})
-
-  // Maximize window
-  // mainWindow.maximize();
-
-  // Removes Main Menu from windows
-  // mainWindow.setMenu(null)
-
-  // Window's heigh and width are fixed
-  mainWindow.setResizable(false)
-  mainWindow.setMaximizable(false)
-
-  // Disables dev tools
-  // mainWindow.webContents.on("devtools-opened", () => { mainWindow.webContents.closeDevTools(); });
-
-
-  mainWindow.on('close', function (e) {
-    /*
-    var choice = require('electron').dialog.showMessageBox(this,
-      {
-        type: 'question',
-        buttons: ['Yes', 'No'],
-        title: 'Confirm',
-        message: 'Are you sure you want to quit?'
-      })
-    if (choice == 1) {
-      e.preventDefault();
+  mainWindow = new BrowserWindow({
+    width: 700,
+    height: 450,
+    show: false,
+    resizable: false,
+    maximizable: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
     }
-    */
-   app.quit()
-  })
-  
+  });
 
-  // Emitted when the window is closed.
+  mainWindow.loadFile(path.join(__dirname, 'main-menu.html'))
+    .then(() => mainWindow.show())
+    .catch((error) => console.error('Flexcel failed to load:', error));
+
+  if (process.env.FLEXCEL_DEBUG === '1') {
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
+  }
+
   mainWindow.on('closed', () => {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    mainWindow = null
-  })
-
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show()
-  })
-
+    mainWindow = null;
+  });
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on('ready', () => {
-  // Get template for default menu
-  //const menu = defaultMenu(app, shell);
+app.whenReady().then(() => {
+  createWindow();
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
 
-  // Set top-level application menu, using modified template
-  // Menu.setApplicationMenu(Menu.buildFromTemplate(menu));
-  const template = [
-    {
-      label: 'Edit',
-      submenu: [
-        {
-          role: 'undo'
-        },
-        {
-          role: 'redo'
-        },
-        {
-          type: 'separator'
-        },
-        {
-          role: 'cut'
-        },
-        {
-          role: 'copy'
-        },
-        {
-          role: 'paste'
-        },
-        {
-          role: 'pasteandmatchstyle'
-        },
-        {
-          role: 'delete'
-        },
-        {
-          role: 'selectall'
-        }
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        {
-          type: 'separator'
-        },
-        {
-          role: 'resetzoom'
-        },
-        {
-          role: 'zoomin'
-        },
-        {
-          role: 'zoomout'
-        },
-        {
-          type: 'separator'
-        }
-      ]
-    },
-    {
-      role: 'window',
-      submenu: [
-        {
-          role: 'close'
-        }
-      ]
-    },
-    {
-      role: 'help',
-      submenu: [
-        {
-          label: 'Learn More',
-          click() { require('electron').shell.openExternal('https://flexcel-flow.github.io/flexcel-website/index.html') }
-        }
-      ]
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
+
+
+// FLEXCEL_PF_FILES_PHASE2_BEGIN
+// Narrow IPC endpoints for the Public Forum editor. No Node APIs exposed to the page.
+{
+  const pfFs = require('node:fs/promises');
+  const pfPath = require('node:path');
+  const { dialog: pfDialog, BrowserWindow: PFWindow } = require('electron');
+  const pfMaxBytes = 8 * 1024 * 1024;
+
+  function pfWindow(event) {
+    const win = PFWindow.fromWebContents(event.sender);
+    const sourceURL = new URL(event.sender.getURL());
+    if (!win || sourceURL.protocol !== 'file:' ||
+        pfPath.basename(decodeURIComponent(sourceURL.pathname)) !== 'pf-flow.html') {
+      throw new Error('PF file operations are only available in the PF editor');
     }
-  ]
+    return win;
+  }
 
-  if (process.platform === 'darwin') {
-    const name = app.getName()
-    template.unshift({
-      label: name,
-      submenu: [
-        {
-          role: 'about'
-        },
-        {
-          type: 'separator'
-        },
-        {
-          role: 'services',
-          submenu: []
-        },
-        {
-          type: 'separator'
-        },
-        {
-          role: 'hide'
-        },
-        {
-          role: 'hideothers'
-        },
-        {
-          role: 'unhide'
-        },
-        {
-          type: 'separator'
-        },
-        {
-          role: 'quit'
+  function validatePF(flow) {
+    if (!flow || typeof flow !== 'object' || Array.isArray(flow) ||
+        flow.flow_type !== 'PF Flow' ||
+        !Array.isArray(flow['flow-data']) || flow['flow-data'].length !== 2 ||
+        !['Pro', 'Con'].includes(flow.firstSpeaker)) {
+      throw new Error('This is not a supported Flexcel Public Forum flow');
+    }
+    for (const grid of flow['flow-data']) {
+      if (!Array.isArray(grid) || grid.length < 1 || grid.length > 250) {
+        throw new Error('Invalid flow grid size');
+      }
+      for (const row of grid) {
+        if (!Array.isArray(row) || row.length > 30 || row.some(cell =>
+            cell !== null &&
+            !(['string', 'number', 'boolean'].includes(typeof cell)) ||
+            (typeof cell === 'string' && cell.length > 20000))) {
+          throw new Error('Invalid cell contents in flow');
         }
-      ]
-    })
-    // Edit menu.
-    template[1].submenu.push(
-      {
-        type: 'separator'
-      },
-      {
-        label: 'Speech',
-        submenu: [
-          {
-            role: 'startspeaking'
-          },
-          {
-            role: 'stopspeaking'
-          }
-        ]
       }
-    )
-    // Window menu.
-    template[3].submenu = [
-      {
-        label: 'Close',
-        accelerator: 'CmdOrCtrl+W',
-        role: 'close'
-      },
-      {
-        label: 'Zoom',
-        role: 'zoom'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        label: 'Bring All to Front',
-        role: 'front'
-      }
-    ]
+    }
+    if (flow.boldElements !== undefined &&
+        (!Array.isArray(flow.boldElements) || flow.boldElements.length !== 2 ||
+         flow.boldElements.some(side => !Array.isArray(side) || side.length > 2000 ||
+           side.some(rc => !Array.isArray(rc) || rc.length !== 2 ||
+              !rc.every(Number.isInteger))))) {
+      throw new Error('Invalid bold-cell data');
+    }
   }
 
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
-  createWindow()
-})
+  ipcMain.handle('flexcel:pf-save', async (event, flow) => {
+    const win = pfWindow(event);
+    validatePF(flow);
+    const json = JSON.stringify(flow, null, 2);
+    if (Buffer.byteLength(json, 'utf8') > pfMaxBytes) {
+      throw new Error('Flow is larger than the maximum supported size (8 MB)');
+    }
+    const answer = await pfDialog.showSaveDialog(win, {
+      title: 'Save Public Forum flow',
+      defaultPath: 'PF Round.json',
+      filters: [{ name: 'Flexcel Flow', extensions: ['json'] }]
+    });
+    if (answer.canceled || !answer.filePath) return { canceled: true };
+    await pfFs.writeFile(answer.filePath, json, 'utf8');
+    return { canceled: false, name: pfPath.basename(answer.filePath) };
+  });
 
-// Quit when all windows are closed.
-app.on('window-all-closed', function () {
-  // On OS X it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-app.on('activate', function () {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) {
-    createWindow()
-  }
-
-
-})
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+  ipcMain.handle('flexcel:pf-open', async event => {
+    const win = pfWindow(event);
+    const answer = await pfDialog.showOpenDialog(win, {
+      title: 'Open Public Forum flow',
+      properties: ['openFile'],
+      filters: [{ name: 'Flexcel Flow', extensions: ['json'] }]
+    });
+    if (answer.canceled || !answer.filePaths.length) return { canceled: true };
+    const filename = answer.filePaths[0];
+    if (pfPath.extname(filename).toLowerCase() !== '.json') {
+      throw new Error('Please select a .json Flexcel flow');
+    }
+    const stat = await pfFs.stat(filename);
+    if (stat.size > pfMaxBytes) throw new Error('File is larger than 8 MB');
+    const flow = JSON.parse(await pfFs.readFile(filename, 'utf8'));
+    validatePF(flow);
+    return { canceled: false, name: pfPath.basename(filename), flow };
+  });
+}
+// FLEXCEL_PF_FILES_PHASE2_END

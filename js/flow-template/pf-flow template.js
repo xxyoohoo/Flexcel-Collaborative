@@ -77,7 +77,7 @@ for (i = 0; i < pro_tabs.length; i++) {
   container = document.getElementById(pro_tabs[i].id);
 
   handsontable_flows.push(new Handsontable(container, {
-    data: [['Pro Constructive', 'Con Rebuttal', 'Pro Summary', 'Con Summary', 'Pro Final Focus', 'Con Final Focus','','','','','','']],
+    data: [['AFF Constructive', 'NEG Rebuttal', 'AFF Summary', 'NEG Summary', 'AFF Final Focus', 'NEG Final Focus','','','','','','']],
     minCols: 6,
     maxCols: 12,
     minRows: 40,
@@ -111,7 +111,7 @@ for (i = 0; i < con_tabs.length; i++) {
   container = document.getElementById(con_tabs[i].id);
 
   handsontable_flows.push(new Handsontable(container, {
-    data: [['Con Constructive', 'Pro Rebuttal', 'Con Rebuttal', 'Pro Summary', 'Con Summary', 'Pro Final Focus', 'Neg Final Focus', '', '', '', '', '']],
+    data: [['NEG Constructive', 'AFF Rebuttal', 'NEG Rebuttal', 'AFF Summary', 'NEG Summary', 'AFF Final Focus', 'NEG Final Focus', '', '', '', '', '']],
     minCols: 6,
     maxCols: 12,
     minRows: 40,

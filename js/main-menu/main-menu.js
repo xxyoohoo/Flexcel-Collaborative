@@ -1,50 +1,21 @@
-const { remote } = require('electron');
-const url = require('url');
-const path = require('path');
+'use strict';
 
+const flowButtons = {
+  'Plan-Flow-1AC': 'plan-flow.html',
+  'Traditional-Flow-1AC': 'traditional-flow.html',
+  pf: 'pf-flow.html',
+  policy: 'policy-flow-dynamic.html'
+};
 
-const electron = require('electron');
-const BrowserWindow = electron.remote.BrowserWindow;
-let flow;
+Object.entries(flowButtons).forEach(([buttonId, page]) => {
+  const button = document.getElementById(buttonId);
+  if (!button) return;
 
-
-var LD_Plan_Flow_Button = document.getElementById('Plan-Flow-1AC');
-LD_Plan_Flow_Button.addEventListener("click", () => {
-
-    windowSetup()
-    remote.getCurrentWindow().loadFile('plan-flow.html')
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    window.flexcel.openFlow(page).catch((error) => {
+      console.error('Unable to open flow:', error);
+      alert('Unable to open the requested flow. Check the developer console.');
+    });
+  });
 });
-
-var LD_Traditional_Flow_Button = document.getElementById('Traditional-Flow-1AC');
-LD_Traditional_Flow_Button.addEventListener("click", () => {
-
-    windowSetup()
-    remote.getCurrentWindow().loadFile('traditional-flow.html')
-
-});
-
-var PF_Flow_Button = document.getElementById('pf');
-PF_Flow_Button.addEventListener("click", () => {
-
-    windowSetup()
-    remote.getCurrentWindow().loadFile('pf-flow.html')
-
-});
-
-var Policy_Flow_Button = document.getElementById('policy');
-Policy_Flow_Button.addEventListener("click", () => {
-
-    windowSetup()
-    remote.getCurrentWindow().loadFile('policy-flow-dynamic.html')
-
-});
-
-
-const windowSetup = () => {
-    remote.getCurrentWindow().setResizable(true);
-    remote.getCurrentWindow().isMaximizable(true);
-    remote.getCurrentWindow().maximize();
-    remote.getCurrentWindow().setMaximizable(true);
-    remote.getCurrentWindow().setResizable(true);
-}
-

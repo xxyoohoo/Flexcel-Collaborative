@@ -4,3 +4,8 @@ dist
 .DS_Store
 *.swp
 *.swo
+
+# Flexcel private room data and local backups
+collaboration/rooms.private.json
+collaboration/rooms.private.json.tmp
+*.before-phase3.bak

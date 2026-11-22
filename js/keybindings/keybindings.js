@@ -1643,36 +1643,36 @@ function reset_rc() {
 }
 
 function switchToCon() {
-    $('#1AC').html('CON')
-    $('#1NC').html('PRO')
+    $('#1AC').html('NEG')
+    $('#1NC').html('AFF')
 
     data['firstSpeaker'] = 'Con'
     dataLoaded = true
     handsontable_flows[0].updateSettings({
-        data: [['Con Constructive', 'Pro Rebuttal', 'Con Summary', 'Pro Summary', 'Con Final Focus', 'Pro Final Focus', '', '', '', '', '', '']]
+        data: [['NEG Constructive', 'AFF Rebuttal', 'NEG Summary', 'AFF Summary', 'NEG Final Focus', 'AFF Final Focus', '', '', '', '', '', '']]
     })
 
     dataLoaded = true
     handsontable_flows[1].updateSettings({
-        data: [['Pro Constructive', 'Con Rebuttal', 'Pro Rebuttal', 'Con Summary', 'Pro Summary', 'Con Final Focus', '', '', '', '', '', '']]
+        data: [['AFF Constructive', 'NEG Rebuttal', 'AFF Rebuttal', 'NEG Summary', 'AFF Summary', 'NEG Final Focus', '', '', '', '', '', '']]
     })
 }
 
 function switchToPro() {
-    $('#1AC').html('PRO')
-    $('#1NC').html('CON')
+    $('#1AC').html('AFF')
+    $('#1NC').html('NEG')
 
     data['firstSpeaker'] = 'Pro'
     dataLoaded = true
     handsontable_flows[0].updateSettings({
-        data: [['Pro Constructive', 'Con Rebuttal', 'Pro Summary', 'Con Summary', 'Pro Final Focus', 'Con Final Focus', '', '', '', '', '', '']],
+        data: [['AFF Constructive', 'NEG Rebuttal', 'AFF Summary', 'NEG Summary', 'AFF Final Focus', 'NEG Final Focus', '', '', '', '', '', '']],
     })
 
     dataLoaded = true
     handsontable_flows[1].updateSettings({
         minCol: 7,
         maxCols: 12,
-        data: [['Con Constructive', 'Pro Rebuttal', 'Con Rebuttal', 'Pro Summary', 'Con Summary', 'Pro Final Focus', 'Neg Final Focus', '', '', '', '', '']],
+        data: [['NEG Constructive', 'AFF Rebuttal', 'NEG Rebuttal', 'AFF Summary', 'NEG Summary', 'AFF Final Focus', 'NEG Final Focus', '', '', '', '', '']],
     })
 }
 

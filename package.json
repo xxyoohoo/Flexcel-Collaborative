@@ -6,7 +6,8 @@
   "scripts": {
     "start": "electron .",
     "dist": "node_modules/.bin/build",
-    "release": "bash scripts/publish_flexcel.sh"
+    "release": "bash scripts/publish_flexcel.sh",
+    "collab:server": "node collaboration/server.js"
   },
   "repository": "https://github.com/saranchockan/Flexcel",
   "keywords": [
@@ -19,7 +20,7 @@
   "author": "Flexcel",
   "license": "CC0-1.0",
   "devDependencies": {
-    "electron": "^2.0.18",
+    "electron": "45.2.2",
     "electron-builder": "^20.38.5",
     "electron-toolkit": "^1.0.24"
   },
@@ -43,7 +44,7 @@
     "vex": "0.0.4",
     "vex-dialog": "^1.1.0",
     "vex-js": "^3.1.1",
-    "word-extractor": "^0.1.4"
+    "ws": "8.23.0"
   },
   "build": {
     "appId": "com.SAC.Flexcel",
